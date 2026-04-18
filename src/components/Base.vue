@@ -1,14 +1,22 @@
+
 <template>
-  <div
-    class="baseBeverage"
-    :style="{ backgroundColor: beverageStore.currentBase?.color }"
-  ></div>
+  <div class="baseBeverage" :style="{ backgroundColor: baseColor }"></div>
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { useBeverageStore } from "../stores/beverageStore";
+const store = useBeverageStore(); 
 
-const beverageStore = useBeverageStore();
+const props = defineProps<{
+  selectedBase: string;
+}>();
+
+const baseColor = computed(() => {
+  const option = store.bases.find((b) => b.id === props.selectedBase);
+  return option?.color ?? "#c6c6c6";
+});
+
 </script>
 
 <style scoped>

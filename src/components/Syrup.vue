@@ -1,15 +1,25 @@
 <template>
   <div
     class="syrup"
-    :style="{ '--texture-color': beverageStore.currentSyrup?.color }"
+    :style="{ '--texture-color': backgroundColor: syrupColor }"
   ></div>
 </template>
 
 <script setup lang="ts">
 import { useBeverageStore } from "../stores/beverageStore";
+import { computed } from "vue";
+const store = useBeverageStore();
 
-const beverageStore = useBeverageStore();
+const props = defineProps<{
+  selectedSyrup: string;
+}>();
+
+const syrupColor = computed(() => {
+  const option = store.syrups.find((s) => s.id === props.selectedSyrup);
+  return option?.color ?? "#c6c6c6";
+});
 </script>
+
 <style lang="scss" scoped>
 .syrup {
   transform: translateY(400%);
