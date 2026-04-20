@@ -135,9 +135,9 @@ const showMessage = (msgRef: Ref<string>, message: string) => {
   }, 3000);
 };
 
-const withGoogle = () => {
+const withGoogle =  async() => {
   const provider = new GoogleAuthProvider();
-  signInWithPopup(auth, provider)
+  await signInWithPopup(auth, provider)
     .then(() => {
       authMessage.value = "";
     })
