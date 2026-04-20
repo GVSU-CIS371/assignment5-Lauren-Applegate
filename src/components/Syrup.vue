@@ -1,7 +1,7 @@
 <template>
   <div
     class="syrup"
-    :style="{ '--texture-color': backgroundColor: syrupColor }"
+    :style="{ '--texture-color': syrupColor, backgroundColor: syrupColor }"
   ></div>
 </template>
 

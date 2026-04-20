@@ -69,16 +69,93 @@
         </template>
       </li>
     </ul>
-    <input type="text" placeholder="Beverage Name" />
-    <button>🍺 Make Beverage</button>
+
+    <div>
+      <div v-if="beverageStore.user">
+        <p>Signed in as: {{ beverageStore.user.displayName ?? beverageStore.user.email }}</p>
+        <button @click="signOut">Sign Out</button>
+      </div>
+      <div v-else>
+        <button @click="withGoogle">Sign in with Google</button>
+      </div>
+      <p v-if="authMessage">{{ authMessage }}</p>
+    </div>
+
+    <input type="text" v-model="beverageStore.currentName" placeholder="Beverage Name" />
+    <button @click="makeBeverage" :disabled="!beverageStore.user">🍺 Make Beverage</button>
+    <p v-if="!beverageStore.user">Please sign in to save your beverage.</p>
+    <p v-if="beverageMessage">{{ beverageMessage }}</p>
+
+    <div v-if="beverageStore.user" id="beverage-container" style="margin-top: 20px">
+    <template v-for="beverage in beverageStore.beverages" :key="beverage.id">
+      <label>
+        <input
+          type="radio"
+          name="recipe"
+          :value="beverage"
+          v-model="beverageStore.currentBeverage"
+          @change="beverageStore.showBeverage(beverage)"
+        />
+        {{ beverage.name }}
+      </label>
+    </template>
   </div>
-  <div id="beverage-container" style="margin-top: 20px"></div>
+  </div>
+
+  
 </template>
 
 <script setup lang="ts">
 import Beverage from "./components/Beverage.vue";
 import { useBeverageStore } from "./stores/beverageStore";
+import { auth } from "./firebase";
+import {
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+} from "firebase/auth";
+import { ref, onMounted, Ref } from "vue";
+
 const beverageStore = useBeverageStore();
+const authMessage = ref("");
+const beverageMessage = ref("");
+
+// monitor auth state and update store
+onMounted(() => {
+  onAuthStateChanged(auth, (user) => {
+    beverageStore.setUser(user);
+  });
+});
+
+const showMessage = (msgRef: Ref<string>, message: string) => {
+  msgRef.value = message;
+  setTimeout(() => {
+    msgRef.value = "";
+  }, 3000);
+};
+
+const withGoogle = () => {
+  const provider = new GoogleAuthProvider();
+  signInWithPopup(auth, provider)
+    .then(() => {
+      authMessage.value = "";
+    })
+    .catch((error) => {
+      showMessage(authMessage, `Sign in failed: ${error.message}`);
+    });
+};
+
+const signOut = () => {
+  firebaseSignOut(auth).catch((error) => {
+    showMessage(authMessage, `Sign out failed: ${error.message}`);
+  });
+};
+
+const makeBeverage = () => {
+  const message = beverageStore.makeBeverage();
+  showMessage(beverageMessage, message ?? "");
+};
 </script>
 
 <style lang="scss">

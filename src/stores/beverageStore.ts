@@ -7,14 +7,12 @@ import {
 } from "../types/beverage";
 import tempretures from "../data/tempretures.json";
 import db from "../firebase";
-import { getAuth, User } from "firebase/auth";
+import { User } from "firebase/auth";
 import {
   collection,
   getDocs,
   setDoc,
   doc,
-  QuerySnapshot,
-  QueryDocumentSnapshot,
   onSnapshot,
   query,
   where
@@ -41,22 +39,26 @@ export const useBeverageStore = defineStore("BeverageStore", {
   actions: {
     init() {
       return Promise.all([
+
+        // fetch all options
         getDocs(collection(db, "bases")),
         getDocs(collection(db, "creamers")),
         getDocs(collection(db, "syrups")),
       ]).then(([basesSnap, creamersSnap, syrupsSnap]) => {
-
+        
+        // map Firestore documents to our types
         this.bases = basesSnap.docs.map(doc => doc.data() as BaseBeverageType);
         this.creamers = creamersSnap.docs.map(doc => doc.data() as CreamerType);
         this.syrups = syrupsSnap.docs.map(doc => doc.data() as SyrupType);
 
+        // set defaults
         this.currentBase = this.bases.find(b => b.name === "Green Tea") ?? this.bases[0];
         this.currentCreamer = this.creamers.find(c => c.name === "No Cream") ?? this.creamers[0];
         this.currentSyrup = this.syrups.find(s => s.name === "No Syrup") ?? this.syrups[0];
       });
     },
 
-    setUser(user: import("firebase/auth").User | null) {
+    setUser(user: User | null) {
       this.user = user;
 
       // detach previous listener if one exists
@@ -73,7 +75,23 @@ export const useBeverageStore = defineStore("BeverageStore", {
         );
 
         this.unsubscribe = onSnapshot(q, (snapshot) => {
-          this.beverages = snapshot.docs.map(doc => doc.data() as BeverageType);
+          this.beverages = snapshot.docs.map(firestoreDoc => {
+            const data = firestoreDoc.data();
+
+            // look up full objects from store using the saved IDs
+            const base = this.bases.find(b => b.id === data.collection_id.base) ?? this.bases[0];
+            const creamer = this.creamers.find(c => c.id === data.collection_id.creamer) ?? this.creamers[0];
+            const syrup = this.syrups.find(s => s.id === data.collection_id.syrup) ?? this.syrups[0];
+
+            return {
+              id: data.beverage_id,
+              name: data.name,
+              temp: data.temp,
+              base,
+              creamer,
+              syrup,
+            } as BeverageType;
+          });
 
           // set currentBeverage to the first one, or null if none
           if (this.beverages.length > 0) {
